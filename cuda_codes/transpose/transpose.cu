@@ -54,33 +54,33 @@ float* init_vector(int size) {
     return P;
 }
 
-    float* block_transpose(int size) {
-        int total_size = size * size;
+float* block_transpose(int size) {
+    int total_size = size * size;
 
-        auto Mh = init_vector(size);
-        float *Ph = new float[total_size];
-        float* Md, *Pd;
+    auto Mh = init_vector(size);
+    float *Ph = new float[total_size];
+    float* Md, *Pd;
 
-        cudaMalloc(&Md, total_size * sizeof(float));
-        cudaMalloc(&Pd, total_size * sizeof(float));
+    cudaMalloc(&Md, total_size * sizeof(float));
+    cudaMalloc(&Pd, total_size * sizeof(float));
 
-        cudaMemcpy(Md, Mh, total_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(Md, Mh, total_size * sizeof(float), cudaMemcpyHostToDevice);
 
-        dim3 threadsPerBlock(2, 2); 
-        dim3 blocksInGrid(ceilingDiv(size, threadsPerBlock.x),
-                        ceilingDiv(size, threadsPerBlock.y));
-        
-        blockTranspose<<<blocksInGrid, threadsPerBlock>>>(Md, Pd, size, size);
-        cudaDeviceSynchronize();
-        
-        cudaMemcpy(Ph, Pd, total_size * sizeof(float), cudaMemcpyDeviceToHost);
+    dim3 threadsPerBlock(2, 2); 
+    dim3 blocksInGrid(ceilingDiv(size, threadsPerBlock.x),
+                    ceilingDiv(size, threadsPerBlock.y));
+    
+    blockTranspose<<<blocksInGrid, threadsPerBlock>>>(Md, Pd, size, size);
+    cudaDeviceSynchronize();
+    
+    cudaMemcpy(Ph, Pd, total_size * sizeof(float), cudaMemcpyDeviceToHost);
 
-        cudaFree(Md);
-        cudaFree(Pd);
-        delete[] Mh;
+    cudaFree(Md);
+    cudaFree(Pd);
+    delete[] Mh;
 
-        return Ph;
-    }
+    return Ph;
+}
 
 
 int main() {
