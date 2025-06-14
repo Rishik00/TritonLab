@@ -9,7 +9,6 @@
 unsigned int ceilingDiv (unsigned int a, unsigned int b) {
     //ceiling division function
     return (a + b - 1) / b;
-
 }
 
 __global__ void multiply_random_kernel(float* output, float* input, int n) {
