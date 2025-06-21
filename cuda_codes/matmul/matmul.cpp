@@ -1,7 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <utility>
-
 
 float* Matmul(int size, float value) {
     float *M, *N = initInputMats(size, value);

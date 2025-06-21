@@ -39,29 +39,40 @@ __global__ void timed1DMinReduction (float* inputArr, int sum, clock_t *timer) {
 }
 
 // Define a vector size
-#define ROW_SIZE 20
-#define COL_SIZE 20
+#define VECTOR_SIZE 10
+
+// each block will be os size (VECTOR_SIZE, 1)
 
 // Take in a matrix, and reduce it to a vector of size NUUM_OLUMNS
 __global__ void Max2DRedOnAxis(
     float *M, 
     float *redVector, 
-    int    M, 
-    int    N, 
     int    axis
 ) {
 
-    int bid, tid, block
+    int bid, tid, block, idx;
+
     if (axis == 0) {
-        tid = threadIdx.x;
-        bid = blockIdx.x;
+        idx = threadIdx.x; + blockIdx.x; * blockDim.x;
+
+        float pSum = 0.0f;
+        for (int m = 0; m <= VECTOR_SIZE; m++) {
+            int vecIdx = idx + m * VECTOR_SIZE;
+
+            psum = psum + M[vecIdx];
+        }
+
+
     } else {
-        tid = threadIdx.y;
-        bid = blockIdx.y;
+        idx = threadIdx.y + blockIdx.y; * blockDim.y;
+        
+        float pSum = 0.0f;
+        for (int m = 0; m <= VECTOR_SIZE; m++) {
+            int vecIdx = idx + m;
+
+            psum = psum + M[vecIdx];
+        }
+
     }
-
-    
-
-
 
 }

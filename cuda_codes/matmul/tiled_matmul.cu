@@ -17,9 +17,8 @@ unsigned int ceilingDiv (unsigned int a, unsigned int b) {
     return (a + b - 1) / b;
 }
 
-
 __global__ void tiled_matrix_multiplication(float* Md, float* Nd, float* Pd) {
-    __shared__ Mds[TILE_WIDTH][TILE_WIDTH];
+    __shared__ Mds[TILE_WIDTH][TILE_WIDTH]; // T x T
     __shared__ Nds[TILE_WIDTH][TILE_WIDTH];
 
     int tidx = threadIdx.x;
@@ -28,14 +27,14 @@ __global__ void tiled_matrix_multiplication(float* Md, float* Nd, float* Pd) {
     int bidy = blockIdx.y;
 
     int Row = tidy + bidy * TILE_WIDTH;
-    int Col = tidx + bidx + TILE_WIDTH;
+    int Col = tidx + bidx * TILE_WIDTH;
 
     float Pval = 0;
     for (int p=0; p < SIZE/TILE_WIDTH; p++) {
         // Loading data to shared memory
         Mds[tidy][tidx] = Md[Row*SIZE + p*TILE_WIDTH + tidx];
-        Ndc[tidy][tidx] = Nd[(p * TILE_WIDTH + tidy)*SIZE + Col];
-        
+        Nds[tidy][tidx] = Nd[(p * TILE_WIDTH + tidy) * SIZE + Col];
+
         __syncthreads();
 
         // Operations are the same
@@ -44,6 +43,7 @@ __global__ void tiled_matrix_multiplication(float* Md, float* Nd, float* Pd) {
         }
         Pd[Row * SIZE + Col] = Pval;
         __syncthreads();
+
     }
 
 }
