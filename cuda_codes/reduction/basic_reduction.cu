@@ -53,6 +53,25 @@ __global__ void simpleMinRed(float* input, int length, float* min) {
 
 }
 
+
+
+__global__ convergentMaxRed (float* input, float* max, int length) {
+    unsigned int idx = threadIdx.x;
+
+    float maxValue = 0.0f;
+    for (unsigned int stride = blockDim.x; stride >= 1; stride /= 2) {
+        if (threadIdx.x < stride) {
+            maxValue = max_k (input[i], input[i + stride])
+        }
+    }
+    __syncthreads();
+
+    if (threadIdx.x == 0) {
+        *max = maxValue;
+    }
+}
+
+
 void RedInit() {
     const float *arr = new float[]{3.4,5.6,7.8,1.1, 1.2, 9.22,9.23};
     const int length = 7;

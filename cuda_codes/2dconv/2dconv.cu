@@ -25,48 +25,30 @@ __global__ void conv2D(float* N, float* P, int width) {
     int row = blockIdx.y  * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
+
+    // init PValue = 0 
     float PValue = 0.0f;
+
+    // Alright, we're around one fine grained thread, meaning one thread
+    // gives me one output eleemnt. So in this case because convolution is
+    // a sliding window operation, we'd want to construct a winow of size 2r + 1 * 2r + 1
     for (int fRow = 0; fRow < 2 * FILTER_RADIUS + 1; fRow++) {
         for(int fCol = 0; fCol < 2 * FILTER_RADIUS + 1; fCol++) {
+
+            // calculating the indexes to go backward and to the left when we are at the 
+            // first eleemnt. These are also called as halo elements
             int inRow = row - FILTER_RADIUS + fRow;
             int inCol = col - FILTER_RADIUS + fCol;
 
+            // Bound check
             if (inRow < row & inCol < col) {
+                // for one p value we compute the mat mul between 2 matrices
                 PValue += F[fRow][fCol] * N[inRow * width + fCol];
             }
         }
     }
 
+    // if you cant understand this, i cant help you
     P[row * width + col] = PValue;
 }
 
-#define INPUT_TILE_DIM 4
-#define OUT_TILE_DIM 2
-#define FILTER_RADIUS 3
-#define FILTER_DIM 3
-
-__constant__ float F[FILTER_DIM][FILTER_DIM];
-
-__global__ void shared_Conv2D(float* N, float* P, int W) {
-    // Shared memory with padding for halo
-    __shared__ float sh[INPUT_TILE_DIM + FILTER_RADIUS - 1][INPUT_TILE_DIM + FILTER_RADIUS - 1];
-
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int row = blockIdx.y * blockDim.y + ty;
-    int col = blockIdx.x * blockDim.x + tx;
-
-    // Compute effective shared memory indices
-    int shared_row = ty;
-    int shared_col = tx;
-
-    if (row < W && col < W) {
-        sh[shared_row][shared_col] = N[row * W + col];
-    } else {
-        sh[shared_row][shared_col] = 0.0f;
-    }
-
-    __syncthreads();
-
-    // Rest of convolution code goes here (not yet implemented)
-}
