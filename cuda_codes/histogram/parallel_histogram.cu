@@ -5,13 +5,13 @@
 #include <sys/time.h>
 #include <utility>
 
-// Histograms length and the vector length
-// should be the same?
 #define NUM_BINS 26
-
-// Just be sure to change this everytime, else just put it in a fn.
 #define STRING_LENGTH 10
 
+// Atomic add prevents the whole race condition problem for GPUs
+// The problem is that there will be a large number of threads
+// trying to access the same location in the histogram, so atomicAdd 
+// wants to block the threads so that they can perform the ops safely
 __global__ void ParallelHistogram(char *data, unsigned int length, unsigned int *histo, unsigned int numBuckets)
 {
     unsigned int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -27,28 +27,29 @@ __global__ void ParallelHistogram(char *data, unsigned int length, unsigned int 
 }
 
 // Writing directly to global memory. This is fine but has its side effects
-__global__ void privateParallelHistogram(char *data, unsigned int length, unsigned int *histo, unsigned int nBuckets)
-{
+// This one does the atomic add but does it blockwise. 
+__global__ void privateParallelHistogram(char *data, unsigned int length, unsigned int *histo, unsigned int nBuckets) {
     unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx < length)
-    {
+    // Ig only for blockIdx.x == 0
+    if (idx < length) {
         unsigned int pos = data[idx] - 'a';
-        if (pos >= 0 && pos < 26)
-        {
+        if (pos >= 0 && pos < 26) {
             atomicAdd(&histo[blockIdx.x * NUM_BINS + pos / nBuckets], 1);
         }
     }
 
-    if (blockIdx.x > 0)
-    {
-        for (unsigned int bin = threadIdx.x; bin < NUM_BINS; bin += blockIdx.x)
-        {
+    // If blockIdx.x > 0 we want to iterate through them and boil them down 
+    if (blockIdx.x > 0) {
+        for (unsigned int bin = threadIdx.x; bin < NUM_BINS; bin += blockIdx.x) {
+	    // bin = threadIdx.x --> NUM_BINS
+	    // blockIdx.x * NUM_BINS + bin is where the atomicAdd perform
             unsigned int binValue = histo[blockIdx.x * NUM_BINS + bin];
-            if (binValue > 0)
-            {
+
+            if (binValue > 0) {
                 atomicAdd(&histo[binValue], 1);
             }
+
         }
     }
 }
